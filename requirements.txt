@@ -5,6 +5,7 @@ charset-normalizer==2.0.12
 distlib==0.3.5
 Django==2.2.16
 djangorestframework==3.12.4
+djangorestframework-simplejwt==5.2.0
 filelock==3.7.1
 identify==2.5.2
 idna==3.3

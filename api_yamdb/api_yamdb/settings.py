@@ -110,12 +110,15 @@ STATICFILES_DIRS = (os.path.join(BASE_DIR, "static/"),)
 # Override default user model
 
 AUTH_USER_MODEL = "users.User"
+PROHIBITED_USER_NAMES = [
+    "me",
+]
 
 # Rest framework settings
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
