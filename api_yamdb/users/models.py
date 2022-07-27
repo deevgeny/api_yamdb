@@ -26,3 +26,4 @@ class User(AbstractUser):
         "Bio",
         blank=True,
     )
+    confirmation_code = models.CharField(max_length=24, blank=True)
