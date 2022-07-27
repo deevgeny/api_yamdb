@@ -1,13 +1,15 @@
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
-from users.models import User
 from users.tokens import confirmation_code
 
-from .permissions import RegisterUser
+from .permissions import AdminRegisterUser, RegisterUser
 from .serializers import UserSerializer
+
+User = get_user_model()
 
 
 class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
@@ -39,3 +41,18 @@ class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         return Response(
             serializer.data, status=status.HTTP_200_OK, headers=headers
         )
+
+
+class AdminRegisterUserViewSet(
+    viewsets.GenericViewSet, mixins.CreateModelMixin
+):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (AdminRegisterUser,)
+
+    def perform_create(self, serializer):
+        """Check username."""
+        username = serializer.validated_data.get("username")
+        if username.lower() in settings.PROHIBITED_USER_NAMES:
+            raise ParseError(detail=f"Username '{username}' is not allowed")
+        serializer.save()
