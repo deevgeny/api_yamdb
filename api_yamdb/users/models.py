@@ -3,11 +3,9 @@ from django.db import models
 
 
 class User(AbstractUser):
-
     USER = "user"
     MODERATOR = "moderator"
     ADMIN = "admin"
-
     ROLE_CHOICES = [
         (USER, "User"),
         (MODERATOR, "Moderator"),
@@ -15,9 +13,13 @@ class User(AbstractUser):
     ]
 
     role = models.CharField(
-        name="User role",
-        max_length=8,
-        blank=False,
-        default=USER,
+        "User role",
         choices=ROLE_CHOICES,
+        default=USER,
+        max_length=8,
+        blank=True,
+    )
+    bio = models.TextField(
+        "Bio",
+        blank=True,
     )
