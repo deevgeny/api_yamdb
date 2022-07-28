@@ -74,8 +74,9 @@ class ManageUsersViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     lookup_field = "username"
     permission_classes = (OnlyAuthenticatedAdminUser,)
-    filter_backends = (filters.SearchFilter,)
+    filter_backends = (filters.SearchFilter, filters.OrderingFilter)
     search_fields = ("username",)
+    ordering = ("username",)
 
     def perform_create(self, serializer):
         """Check username."""
