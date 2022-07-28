@@ -27,3 +27,9 @@ class User(AbstractUser):
         blank=True,
     )
     confirmation_code = models.CharField(max_length=24, blank=True)
+
+    def save(self, *args, **kwargs):
+        """Update is_staff for admin users."""
+        if self.role == User.ADMIN:
+            self.is_staff = True
+        super(User, self).save(*args, **kwargs)

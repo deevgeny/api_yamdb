@@ -6,6 +6,8 @@ from .models import User
 
 
 class CustomUserAdmin(UserAdmin):
+    """Add custom model fields to admin site form."""
+
     fieldsets = (
         (None, {"fields": ("username", "password")}),
         (_("Personal info"), {"fields": ("first_name", "last_name", "email")}),
@@ -29,7 +31,13 @@ class CustomUserAdmin(UserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("username", "password1", "password2", "role"),
+                "fields": (
+                    "username",
+                    "password1",
+                    "password2",
+                    "role",
+                    "email",
+                ),
             },
         ),
     )
