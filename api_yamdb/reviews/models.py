@@ -4,7 +4,7 @@ from django.db import models
 User = get_user_model()
 
 
-class Categories(models.Model):
+class Category(models.Model):
     name = models.CharField(
         max_length=256,
         verbose_name="Название категории",
@@ -18,7 +18,7 @@ class Categories(models.Model):
     )
 
     class Meta:
-        ordering = ('name',)
+        # ordering = ('name',)
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
 
@@ -26,7 +26,7 @@ class Categories(models.Model):
         return self.name
 
 
-class Genres(models.Model):
+class Genre(models.Model):
     name = models.CharField(
         max_length=256,
         verbose_name="Название жанра",
@@ -40,7 +40,7 @@ class Genres(models.Model):
     )
 
     class Meta:
-        ordering = ('name',)
+        # ordering = ('name',)
         verbose_name = "Жанр"
         verbose_name_plural = "Жанры"
 
@@ -65,15 +65,13 @@ class Title(models.Model):
         help_text="Добавьте описание произведения"
     )
     genre = models.ManyToManyField(
-        Genres,
-        blank=True,
-        null=True,
+        Genre,
         related_name='titles',
         verbose_name="Жанр",
         help_text='Выберите жанр'
     )
     category = models.ForeignKey(
-        Categories,
+        Category,
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
@@ -83,7 +81,7 @@ class Title(models.Model):
     )
 
     class Meta:
-        ordering = ('name',)
+        # ordering = ('name',)
         verbose_name = "Произведение"
         verbose_name_plural = "Произведения"
 
