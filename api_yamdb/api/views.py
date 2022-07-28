@@ -2,22 +2,39 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from rest_framework import mixins, status, views, viewsets
+from rest_framework import filters, mixins, status, views, viewsets
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from users.tokens import confirmation_code
 
-from .permissions import AdminRegisterUser, AllowPostMethod
-from .serializers import UserSerializer
+from .permissions import (
+    AccessPersonalProfileData,
+    AllowPostMethodForAnonymousUser,
+    OnlyAuthenticatedAdminUser,
+)
+from .serializers import ConfinedUserSerializer, UserSerializer
 
 User = get_user_model()
 
 
+# Helper functions
+def check_required_fields(request, field_names):
+    """Check required fields and return result."""
+    errors = {}
+    for field_name in field_names:
+        if not request.data.get(field_name):
+            errors[field_name] = ["This field is required."]
+    if len(errors) > 0:
+        return errors
+
+
 class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
+    """New user registration by anonymous user."""
+
     queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = (AllowPostMethod,)
+    serializer_class = ConfinedUserSerializer
+    permission_classes = (AllowPostMethodForAnonymousUser,)
 
     def perform_create(self, serializer):
         """Check username and create token."""
@@ -50,12 +67,15 @@ class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         )
 
 
-class AdminRegisterUserViewSet(
-    viewsets.GenericViewSet, mixins.CreateModelMixin
-):
+class ManageUsersViewSet(viewsets.ModelViewSet):
+    """Manage users by admin."""
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (AdminRegisterUser,)
+    lookup_field = "username"
+    permission_classes = (OnlyAuthenticatedAdminUser,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ("username",)
 
     def perform_create(self, serializer):
         """Check username."""
@@ -65,21 +85,18 @@ class AdminRegisterUserViewSet(
         serializer.save()
 
 
-class RequestJWT(views.APIView):
+class RequestJWTView(views.APIView):
     """Request JWT token after registration."""
 
-    permission_classes = (AllowPostMethod,)
+    permission_classes = (AllowPostMethodForAnonymousUser,)
 
     def post(self, request):
-        # Check request fields and response errors
-        errors = {}
-        if not request.data.get("username"):
-            errors["username"] = ["This field is required."]
-        if not request.data.get("confirmation_code"):
-            errors["confirmation_code"] = ["This field is required."]
-        if len(errors) > 0:
+        # Check required fields
+        required_fields = ["username", "confirmation_code"]
+        errors = check_required_fields(request, required_fields)
+        if errors:
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
-        # Get user from db, check confirmation code and response errors
+        # Get user from db and check confirmation code
         user = get_object_or_404(User, username=request.data.get("username"))
         if user.confirmation_code != request.data.get("confirmation_code"):
             return Response(
@@ -89,3 +106,26 @@ class RequestJWT(views.APIView):
         # Generate JWT token
         refresh = RefreshToken.for_user(user)
         return Response({"token": str(refresh.access_token)})
+
+
+class PersonalProfileView(views.APIView):
+    """Read and edit personal profile data."""
+
+    permission_classes = (AccessPersonalProfileData,)
+
+    def get(self, request):
+        user = get_object_or_404(User, username=request.user.username)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        user = get_object_or_404(User, username=request.user.username)
+        # Prevent user to change his role
+        data = request.data.dict()
+        if request.data.get("role"):
+            data["role"] = user.role
+        serializer = UserSerializer(user, data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
