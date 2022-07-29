@@ -3,6 +3,10 @@ from django_filters import rest_framework as filters
 from reviews.models import Title
 
 
+class NumberInFilter(filters.BaseInFilter, filters.NumberFilter):
+    pass
+
+
 class TitleFilter(filters.FilterSet):
     category = filters.CharFilter(
         field_name='category__slug',
@@ -16,10 +20,7 @@ class TitleFilter(filters.FilterSet):
         field_name='name',
         lookup_expr='icontains'
     )
-    year = filters.NumberFilter(
-        field_name='year',
-        lookup_expr='icontains'
-    )
+    year = NumberInFilter(field_name='year', lookup_expr='in')
 
     class Meta:
         model = Title

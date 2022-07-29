@@ -177,9 +177,9 @@ class TitleViewSet(viewsets.ModelViewSet):
     """Title serializer."""
 
     queryset = Title.objects.all()
+    permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
-    permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
     filterset_class = TitleFilter
 
     def get_serializer_class(self):

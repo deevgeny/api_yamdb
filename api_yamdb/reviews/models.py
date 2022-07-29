@@ -5,6 +5,7 @@ User = get_user_model()
 
 
 class Category(models.Model):
+    """Модель категории."""
     name = models.CharField(
         max_length=256,
         verbose_name="Название категории",
@@ -18,7 +19,12 @@ class Category(models.Model):
     )
 
     class Meta:
-        # ordering = ('name',)
+        constraints = [
+            models.UniqueConstraint(
+                name='exclude the re-creation of the сategory',
+                fields=['name', 'slug'],
+            )
+        ]
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
 
@@ -27,6 +33,7 @@ class Category(models.Model):
 
 
 class Genre(models.Model):
+    """Модель жанра."""
     name = models.CharField(
         max_length=256,
         verbose_name="Название жанра",
@@ -40,7 +47,12 @@ class Genre(models.Model):
     )
 
     class Meta:
-        # ordering = ('name',)
+        constraints = [
+            models.UniqueConstraint(
+                name='exclude the re-creation of the genre',
+                fields=['name', 'slug'],
+            )
+        ]
         verbose_name = "Жанр"
         verbose_name_plural = "Жанры"
 
@@ -49,6 +61,7 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
+    """Модель произведения."""
     name = models.CharField(
         max_length=256,
         verbose_name="Название произведения",
@@ -81,7 +94,12 @@ class Title(models.Model):
     )
 
     class Meta:
-        # ordering = ('name',)
+        constraints = [
+            models.UniqueConstraint(
+                name='exclude the re-creation of the titles',
+                fields=['name', 'year'],
+            )
+        ]
         verbose_name = "Произведение"
         verbose_name_plural = "Произведения"
 
