@@ -10,6 +10,7 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.filters import TitleFilter
+from api.pagination import CustomPagination
 from api.permissions import (
     AccessPersonalProfileData,
     AllowPostMethodForAnonymousUser,
@@ -150,6 +151,7 @@ class CategoriesViewSet(mixins.CreateModelMixin,
 
     queryset = Category.objects.all()
     serializer_class = CategoriesSerializer
+    pagination_class = CustomPagination
     permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter,)
@@ -164,6 +166,7 @@ class GenresViewSet(mixins.CreateModelMixin,
 
     queryset = Genre.objects.all()
     serializer_class = GenresSerializer
+    pagination_class = CustomPagination
     permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter,)
@@ -174,6 +177,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     """Title serializer."""
 
     queryset = Title.objects.all()
+    pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
     filterset_class = TitleFilter
