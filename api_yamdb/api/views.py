@@ -183,6 +183,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
-        if self.request.method in ['POST', 'PATCH']:
-            return TitleCreateSerializer
-        return TitleReadSerializer
+        if self.action in ('retrieve', 'list'):
+            return TitleReadSerializer
+        return TitleCreateSerializer
