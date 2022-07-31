@@ -100,18 +100,73 @@
    ```
 ## Примеры запросов на эндпоинты.
 
+### Создание нового пользователя
+#### Запрос
+```sh
+curl --location --request POST 'http://127.0.0.1:8000/api/v1/auth/signup/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "newuseremail@example.com",
+    "username": "newuser"
+}'
+```
+#### Ответ
+```sh
+{
+    "email": "newuseremail@example.com",
+    "username": "newuser"
+}
+```
+
+
+### Получение токена
+#### Запрос
+```sh
+curl --location --request POST 'http://127.0.0.1:8000/api/v1/auth/token/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "username": "newuser",
+    "confirmation_code": "newuser-confirmation-code"
+}'
+```
+#### Ответ
+```sh
+{
+    "token": "jwt_access_token"
+}
+```
+
+### Обращение к данным своей учетной записи
+#### Запрос
+```sh
+curl --location --request GET 'http://127.0.0.1:8000/api/v1/users/me/' \
+--header 'Authorization: Bearer jwt_access_token'
+```
+#### Ответ
+```sh
+{
+    "username": "newuser",
+    "email": "newuseremail@example.com",
+    "first_name": "",
+    "last_name": "",
+    "bio": "",
+    "role": "user"
+}
+```
+
 
 ## Стек технологий
-- Python 3.10.2, 
+- Python 3.7.13, 
 - Django 2.2.16,
-- Django Filter 22.1
+- Django Filter 21.1
 - Django REST Framework 3.12.4
-- Simple JWT 4.7.2 + djoser 2.1.0
+- Simple JWT 5.2.0
 
 
 ## Документация к API
 Чтобы открыть документацию, запустите сервер и 
 перейдите по ссылке:`http://127.0.0.1:8000/redoc/`
+
 
 ## Разработчики
 [Евгений Дериглазов](https://github.com/evgeny81d) |
