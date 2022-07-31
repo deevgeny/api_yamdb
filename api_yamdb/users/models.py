@@ -16,14 +16,14 @@ class User(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
 
     role = models.CharField(
-        "User role",
+        "Роль пользователя",
         choices=ROLE_CHOICES,
         default=USER,
         max_length=9,
         blank=True,
     )
     bio = models.TextField(
-        "Bio",
+        "Биография",
         blank=True,
     )
     confirmation_code = models.CharField(max_length=24, blank=True)
