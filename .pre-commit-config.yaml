@@ -1,0 +1,23 @@
+exclude: |
+    (?x)^(
+        venv/|
+        .*/migrations/.*.py|
+    )$
+repos:
+-   repo: https://github.com/asottile/seed-isort-config
+    rev: 17a28caa679a4401fcf45a261ac3ff8cf93ef2e7
+    hooks:
+    - id: seed-isort-config
+-   repo: https://github.com/pre-commit/mirrors-isort
+    rev: 32119baf69e913a72f2e1b1fbe0d56921b670ebb
+    hooks:
+    - id: isort
+-   repo: https://github.com/ambv/black
+    rev: b4dc40bf7aab4cd8914c3a2046c8ffc71bba2ff9
+    hooks:
+    - id: black
+      language_version: python3.7
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    - id: flake8
