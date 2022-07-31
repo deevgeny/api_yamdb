@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
+
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, views, viewsets
 from rest_framework.exceptions import ParseError
@@ -25,6 +26,7 @@ from api.serializers import (
     UserSerializer)
 from reviews.models import Category, Genre, Title
 from users.tokens import confirmation_code
+
 
 User = get_user_model()
 
