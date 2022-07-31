@@ -1,32 +1,31 @@
-from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
-from django.shortcuts import get_object_or_404
-
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, status, views, viewsets
-from rest_framework.exceptions import ParseError
-from rest_framework.response import Response
-from rest_framework.viewsets import GenericViewSet
-from rest_framework_simplejwt.tokens import RefreshToken
-
 from api.filters import TitleFilter
 from api.pagination import CustomPagination
 from api.permissions import (
     AccessPersonalProfileData,
     AllowPostMethodForAnonymousUser,
     ForAdminOthersAuthorizedOnlyRead,
-    OnlyAuthenticatedAdminUser)
+    OnlyAuthenticatedAdminUser,
+)
 from api.serializers import (
     CategoriesSerializer,
     ConfinedUserSerializer,
     GenresSerializer,
     TitleCreateSerializer,
     TitleReadSerializer,
-    UserSerializer)
+    UserSerializer,
+)
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, mixins, status, views, viewsets
+from rest_framework.exceptions import ParseError
+from rest_framework.response import Response
+from rest_framework.viewsets import GenericViewSet
+from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Genre, Title
 from users.tokens import confirmation_code
-
 
 User = get_user_model()
 
@@ -145,34 +144,40 @@ class PersonalProfileView(views.APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CategoriesViewSet(mixins.CreateModelMixin,
-                        mixins.ListModelMixin,
-                        mixins.DestroyModelMixin,
-                        GenericViewSet):
+class CategoriesViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    GenericViewSet,
+):
     """Categories serializer."""
 
     queryset = Category.objects.all()
     serializer_class = CategoriesSerializer
     pagination_class = CustomPagination
     permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
-    lookup_field = 'slug'
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    lookup_field = "slug"
+    filter_backends = (filters.SearchFilter, filters.OrderingFilter)
+    search_fields = ("name",)
+    ordering = ("name",)
 
 
-class GenresViewSet(mixins.CreateModelMixin,
-                    mixins.ListModelMixin,
-                    mixins.DestroyModelMixin,
-                    GenericViewSet):
+class GenresViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    GenericViewSet,
+):
     """Genres serializer."""
 
     queryset = Genre.objects.all()
     serializer_class = GenresSerializer
     pagination_class = CustomPagination
     permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
-    lookup_field = 'slug'
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    lookup_field = "slug"
+    filter_backends = (filters.SearchFilter, filters.OrderingFilter)
+    search_fields = ("name",)
+    ordering = ("name",)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -181,10 +186,11 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
     pagination_class = CustomPagination
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
     filterset_class = TitleFilter
+    ordering = ("name",)
 
     def get_serializer_class(self):
-        if self.action in ('retrieve', 'list'):
+        if self.action in ("retrieve", "list"):
             return TitleReadSerializer
         return TitleCreateSerializer
