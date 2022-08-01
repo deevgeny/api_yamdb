@@ -23,11 +23,11 @@ from .permissions import (
 from .serializers import (
     CategoriesSerializer,
     CommentSerializer,
-    ConfinedUserSerializer,
+    CreateTitleSerializer,
     GenresSerializer,
+    RegisterUserSerializer,
     ReviewSerializer,
-    TitleCreateSerializer,
-    TitleReadSerializer,
+    TitleSerializer,
     UserSerializer,
 )
 
@@ -49,7 +49,7 @@ class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
     """New user registration view."""
 
     queryset = User.objects.all()
-    serializer_class = ConfinedUserSerializer
+    serializer_class = RegisterUserSerializer
     permission_classes = (AllowPostForAnonymousUser,)
 
     def perform_create(self, serializer):
@@ -196,8 +196,8 @@ class TitleViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ("retrieve", "list"):
-            return TitleReadSerializer
-        return TitleCreateSerializer
+            return TitleSerializer
+        return CreateTitleSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

@@ -7,8 +7,8 @@ from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
 
 
-class ConfinedUserSerializer(serializers.ModelSerializer):
-    """Сериализатор ????."""
+class RegisterUserSerializer(serializers.ModelSerializer):
+    """User model serializer for user registration."""
 
     class Meta:
         model = User
@@ -16,7 +16,7 @@ class ConfinedUserSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор кастомной модели пользователя."""
+    """User model serializer."""
 
     class Meta:
         model = User
@@ -31,7 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CategoriesSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели категория."""
+    """Category model serializer."""
 
     class Meta:
         model = Category
@@ -49,7 +49,7 @@ class CategoriesSerializer(serializers.ModelSerializer):
 
 
 class GenresSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели жанров."""
+    """Genre model serializer."""
 
     class Meta:
         model = Genre
@@ -66,8 +66,8 @@ class GenresSerializer(serializers.ModelSerializer):
         ]
 
 
-class TitleReadSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели произведения, для чтения данных."""
+class TitleSerializer(serializers.ModelSerializer):
+    """Title model serializer."""
 
     category = CategoriesSerializer(read_only=True)
     genre = GenresSerializer(read_only=True, many=True)
@@ -97,20 +97,18 @@ class TitleReadSerializer(serializers.ModelSerializer):
             current_year = date.today().year
             if not (value <= current_year):
                 raise serializers.ValidationError(
-                    "Нельзя добавлять произведения, которые еще не вышли."
-                    "Год выпуска не может быть больше текущего года."
+                    "Title year should be less or equal to current year!"
                 )
             return value
 
     def get_rating(self, obj):
         """Calculate title rating."""
-        # Посмотреть, может сделать лучше
         if obj.reviews.count() > 0:
             return obj.reviews.aggregate(rating=Avg("score"))["rating"]
 
 
-class TitleCreateSerializer(TitleReadSerializer):
-    """Сериализатор для модели произведения, для записи данных."""
+class CreateTitleSerializer(TitleSerializer):
+    """Title model serializer for create operation."""
 
     genre = serializers.SlugRelatedField(
         queryset=Genre.objects.all(), slug_field="slug", many=True
@@ -133,7 +131,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ("id", "text", "author", "score", "pub_date")
         read_only_fields = ("id", "title", "author", "pub_date")
-        # здесь попробовать юник констрэнт
 
 
 class CommentSerializer(serializers.ModelSerializer):
