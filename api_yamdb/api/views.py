@@ -1,19 +1,5 @@
 from api.filters import TitleFilter
 from api.pagination import CustomPagination
-from api.permissions import (
-    AccessPersonalProfileData,
-    AllowPostMethodForAnonymousUser,
-    ForAdminOthersAuthorizedOnlyRead,
-    OnlyAuthenticatedAdminUser,
-)
-from api.serializers import (
-    CategoriesSerializer,
-    ConfinedUserSerializer,
-    GenresSerializer,
-    TitleCreateSerializer,
-    TitleReadSerializer,
-    UserSerializer,
-)
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
@@ -24,8 +10,25 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import Category, Genre, Title
+from reviews.models import Category, Genre, Review, Title
 from users.tokens import confirmation_code
+
+from .permissions import (
+    AccessPersonalProfileData,
+    AllowPostMethodForAnonymousUser,
+    ForAdminOthersAuthorizedOnlyRead,
+    NewPermission,
+    OnlyAuthenticatedAdminUser,
+)
+from .serializers import (
+    CategoriesSerializer,
+    ConfinedUserSerializer,
+    GenresSerializer,
+    ReviewSerializer,
+    TitleCreateSerializer,
+    TitleReadSerializer,
+    UserSerializer,
+)
 
 User = get_user_model()
 
@@ -194,3 +197,27 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ("retrieve", "list"):
             return TitleReadSerializer
         return TitleCreateSerializer
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    """Doc."""
+
+    serializer_class = ReviewSerializer
+    permission_classes = (NewPermission,)
+    # lookup_url_kwarg = "" это допилить
+
+    def get_queryset(self):
+        title_id = self.kwargs.get("title_id")
+        queryset = Review.objects.filter(title=title_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        title_id = self.kwargs.get("title_id")
+        username = self.request.user.username
+        user = get_object_or_404(User, username=username)
+        title = get_object_or_404(Title, id=title_id)
+        if Review.objects.filter(title=title, author=user).exists():
+            raise ParseError(
+                detail={"Integrity error": "This review already exists"}
+            )
+        serializer.save(author=user, title=title)

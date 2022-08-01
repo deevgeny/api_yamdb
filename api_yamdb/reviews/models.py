@@ -130,11 +130,14 @@ class Review(models.Model):
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name="rating",
+        related_name="review",
         verbose_name="Отзыв",
         help_text="Выберите произведение",
     )
-    text = models.TextField(verbose_name="Текст отзыва")
+    text = models.TextField(
+        verbose_name="Текст отзыва",
+        blank=False,
+    )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -153,6 +156,12 @@ class Review(models.Model):
     )
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                name="user can create only one review",
+                fields=["title", "author"],
+            )
+        ]
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
 

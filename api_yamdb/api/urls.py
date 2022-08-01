@@ -1,13 +1,16 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from api.views import CategoriesViewSet, GenresViewSet, TitleViewSet
-from api.views import (
+from .views import (
+    CategoriesViewSet,
+    GenresViewSet,
     ManageUsersViewSet,
     PersonalProfileView,
     RegisterUserViewSet,
-    RequestJWTView,)
-
+    RequestJWTView,
+    ReviewViewSet,
+    TitleViewSet,
+)
 
 app_name = "api"
 
@@ -17,6 +20,9 @@ router.register("users", ManageUsersViewSet)
 router.register("categories", CategoriesViewSet, basename="categories")
 router.register("genres", GenresViewSet, basename="genres")
 router.register("titles", TitleViewSet, basename="titles")
+router.register(
+    r"titles/(?P<title_id>\d+)/reviews", ReviewViewSet, basename="reviews"
+)
 
 urlpatterns = [
     path("v1/auth/token/", RequestJWTView.as_view(), name="request-jwt"),
