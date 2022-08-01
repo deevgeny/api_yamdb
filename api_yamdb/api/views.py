@@ -15,10 +15,10 @@ from users.tokens import confirmation_code
 
 from .permissions import (
     AccessPersonalProfileData,
-    AllowPostMethodForAnonymousUser,
-    ForAdminOthersAuthorizedOnlyRead,
-    NewPermission,
-    OnlyAuthenticatedAdminUser,
+    AdminUserOnly,
+    AdminUserOrReadOnly,
+    AllowPostForAnonymousUser,
+    ReviewCommentPermission,
 )
 from .serializers import (
     CategoriesSerializer,
@@ -46,11 +46,11 @@ def check_required_fields(request, field_names):
 
 
 class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
-    """New user registration by anonymous user."""
+    """New user registration view."""
 
     queryset = User.objects.all()
     serializer_class = ConfinedUserSerializer
-    permission_classes = (AllowPostMethodForAnonymousUser,)
+    permission_classes = (AllowPostForAnonymousUser,)
 
     def perform_create(self, serializer):
         """Check username, create confirmation code, save and send email."""
@@ -83,29 +83,10 @@ class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         )
 
 
-class ManageUsersViewSet(viewsets.ModelViewSet):
-    """Manage users by admininistrators."""
-
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    lookup_field = "username"
-    permission_classes = (OnlyAuthenticatedAdminUser,)
-    filter_backends = (filters.SearchFilter, filters.OrderingFilter)
-    search_fields = ("username",)
-    ordering = ("username",)
-
-    def perform_create(self, serializer):
-        """Check username."""
-        username = serializer.validated_data.get("username")
-        if username.lower() in settings.PROHIBITED_USER_NAMES:
-            raise ParseError(detail=f"Username '{username}' is not allowed")
-        serializer.save()
-
-
 class RequestJWTView(views.APIView):
-    """Request JWT token after registration."""
+    """Request JWT token view."""
 
-    permission_classes = (AllowPostMethodForAnonymousUser,)
+    permission_classes = (AllowPostForAnonymousUser,)
 
     def post(self, request):
         # Check required fields
@@ -125,8 +106,27 @@ class RequestJWTView(views.APIView):
         return Response({"token": str(refresh.access_token)})
 
 
+class ManageUsersViewSet(viewsets.ModelViewSet):
+    """Manage users view."""
+
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    lookup_field = "username"
+    permission_classes = (AdminUserOnly,)
+    filter_backends = (filters.SearchFilter, filters.OrderingFilter)
+    search_fields = ("username",)
+    ordering = ("username",)
+
+    def perform_create(self, serializer):
+        """Check username."""
+        username = serializer.validated_data.get("username")
+        if username.lower() in settings.PROHIBITED_USER_NAMES:
+            raise ParseError(detail=f"Username '{username}' is not allowed")
+        serializer.save()
+
+
 class PersonalProfileView(views.APIView):
-    """Read and edit personal profile data."""
+    """Read and edit personal profile data view."""
 
     permission_classes = (AccessPersonalProfileData,)
 
@@ -137,7 +137,7 @@ class PersonalProfileView(views.APIView):
 
     def patch(self, request):
         user = get_object_or_404(User, username=request.user.username)
-        # Prevent user to change his role
+        # Do not allow user to change his role
         data = request.data.dict()
         if request.data.get("role"):
             data["role"] = user.role
@@ -154,12 +154,12 @@ class CategoriesViewSet(
     mixins.DestroyModelMixin,
     GenericViewSet,
 ):
-    """Categories serializer."""
+    """Category viewset."""
 
     queryset = Category.objects.all()
     serializer_class = CategoriesSerializer
     pagination_class = CustomPagination
-    permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
+    permission_classes = (AdminUserOrReadOnly,)
     lookup_field = "slug"
     filter_backends = (filters.SearchFilter, filters.OrderingFilter)
     search_fields = ("name",)
@@ -172,12 +172,12 @@ class GenresViewSet(
     mixins.DestroyModelMixin,
     GenericViewSet,
 ):
-    """Genres serializer."""
+    """Genre viewset."""
 
     queryset = Genre.objects.all()
     serializer_class = GenresSerializer
     pagination_class = CustomPagination
-    permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
+    permission_classes = (AdminUserOrReadOnly,)
     lookup_field = "slug"
     filter_backends = (filters.SearchFilter, filters.OrderingFilter)
     search_fields = ("name",)
@@ -185,10 +185,10 @@ class GenresViewSet(
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    """Title serializer."""
+    """Title viewset."""
 
     queryset = Title.objects.all()
-    permission_classes = (ForAdminOthersAuthorizedOnlyRead,)
+    permission_classes = (AdminUserOrReadOnly,)
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
     filterset_class = TitleFilter
@@ -204,8 +204,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     """Review viewset."""
 
     serializer_class = ReviewSerializer
-    permission_classes = (NewPermission,)
-    # lookup_url_kwarg = "" это допилить
+    permission_classes = (ReviewCommentPermission,)
 
     def get_queryset(self):
         title_id = self.kwargs.get("title_id")
@@ -228,10 +227,9 @@ class CommentViewSet(viewsets.ModelViewSet):
     """Comment viewset."""
 
     serializer_class = CommentSerializer
-    permission_classes = (NewPermission,)
+    permission_classes = (ReviewCommentPermission,)
 
     def get_queryset(self):
-        # title_id = self.kwargs.get("title_id")
         review_id = self.kwargs.get("review_id")
         queryset = Comment.objects.filter(review=review_id)
         return queryset
@@ -241,8 +239,4 @@ class CommentViewSet(viewsets.ModelViewSet):
         username = self.request.user.username
         user = get_object_or_404(User, username=username)
         review = get_object_or_404(Review, id=review_id)
-        # if Review.objects.filter(title=title, author=user).exists():
-        #    raise ParseError(
-        #        detail={"Integrity error": "This review already exists"}
-        #    )
         serializer.save(author=user, review=review)

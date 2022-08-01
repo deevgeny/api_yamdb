@@ -4,34 +4,33 @@ from rest_framework import permissions
 User = get_user_model()
 
 
-class ForAdminOthersAuthorizedOnlyRead(permissions.BasePermission):
-    """
-    Post and Delete method permission for authenticated admin user.
-    For the other only read.
-    """
+class AdminUserOrReadOnly(permissions.BasePermission):
+    """Allow READ or authenticated administrator user only."""
 
     def has_permission(self, request, view):
         return (
+            # Only read
             request.method in permissions.SAFE_METHODS
+            # Only admin user
             or request.user.is_authenticated
             and request.user.is_admin
         )
 
 
-class AllowPostMethodForAnonymousUser(permissions.BasePermission):
+class AllowPostForAnonymousUser(permissions.BasePermission):
     """Post method permission for anonymous user."""
 
     def has_permission(self, request, view):
         return request.method == "POST" and request.user.is_anonymous
 
 
-class OnlyAuthenticatedAdminUser(permissions.BasePermission):
+class AdminUserOnly(permissions.BasePermission):
     """Allow any type of request for authenticated admin user."""
 
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
-            and request.user.role == User.ADMIN
+            and request.user.is_admin
             or request.user.is_superuser
         )
 
@@ -46,44 +45,33 @@ class AccessPersonalProfileData(permissions.BasePermission):
         return request.user.username == obj.username
 
 
-class AdminReview(permissions.BasePermission):
-    """Read"""
+class ReviewCommentPermission(permissions.BasePermission):
+    """Permission for review and comment models.
+
+    Allow:
+        READ: for all users
+        POST DELETE PATCH: for authenticated owners(authors) of content
+        All methods: for authenticated administrators and moderators
+    """
 
     def has_permission(self, request, view):
-        if request.user.is_authenticated:
-            return (
-                request.user.role == User.ADMIN
-                or request.user.role == User.MODERATOR
-            )
-
-
-class CreateOrUpdateReview(permissions.BasePermission):
-    """Docstr"""
-
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        if request.user.is_authenticated and request.method == "POST":
-            return True
-
-
-class NewPermission(permissions.BasePermission):
-    """New permission."""
-
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        if request.user.is_authenticated:
-            return (
-                request.method in ["POST", "DELETE", "PATCH"]
-                or request.method in ["POST", "PATCH", "DELETE", "PUT"]
-                and request.user.role in [User.ADMIN, User.MODERATOR]
-            )
+        user_methods = ["POST", "DELETE", "PATCH"]
+        return (
+            request.method in permissions.SAFE_METHODS
+            or request.user.is_authenticated
+            and request.method in user_methods
+            or request.user.is_authenticated
+            and request.user.is_admin
+            or request.user.is_authenticated
+            and request.user.is_moderator
+        )
 
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        if request.user.username == obj.author.username:
-            return True
-        if request.user.is_authenticated:
-            return request.user.role in [User.ADMIN, User.MODERATOR]
+        return (
+            request.method in permissions.SAFE_METHODS
+            or request.user.username == obj.author.username
+            or request.user.is_authenticated
+            and request.user.is_admin
+            or request.user.is_authenticated
+            and request.user.is_moderator
+        )
