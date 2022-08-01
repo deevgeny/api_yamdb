@@ -3,7 +3,7 @@ from datetime import date
 from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from reviews.models import Category, Genre, Review, Title
+from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
 
 
@@ -105,8 +105,8 @@ class TitleReadSerializer(serializers.ModelSerializer):
     def get_rating(self, obj):
         """Calculate title rating."""
         # Посмотреть, может сделать лучше
-        if obj.review.count() > 0:
-            return obj.review.aggregate(rating=Avg("score"))["rating"]
+        if obj.reviews.count() > 0:
+            return obj.reviews.aggregate(rating=Avg("score"))["rating"]
 
 
 class TitleCreateSerializer(TitleReadSerializer):
@@ -122,6 +122,8 @@ class TitleCreateSerializer(TitleReadSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """Review serializer."""
+
     text = serializers.CharField()
     score = serializers.IntegerField(max_value=10, min_value=1)
     id = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -132,3 +134,15 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ("id", "text", "author", "score", "pub_date")
         read_only_fields = ("id", "title", "author", "pub_date")
         # здесь попробовать юник констрэнт
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """Comment serializer."""
+
+    id = serializers.PrimaryKeyRelatedField(read_only=True)
+    author = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ("id", "text", "author", "pub_date")
+        read_only_fields = ("id", "author", "pub_date")

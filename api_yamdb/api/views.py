@@ -10,7 +10,7 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import Category, Genre, Review, Title
+from reviews.models import Category, Comment, Genre, Review, Title
 from users.tokens import confirmation_code
 
 from .permissions import (
@@ -22,6 +22,7 @@ from .permissions import (
 )
 from .serializers import (
     CategoriesSerializer,
+    CommentSerializer,
     ConfinedUserSerializer,
     GenresSerializer,
     ReviewSerializer,
@@ -200,7 +201,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    """Doc."""
+    """Review viewset."""
 
     serializer_class = ReviewSerializer
     permission_classes = (NewPermission,)
@@ -221,3 +222,27 @@ class ReviewViewSet(viewsets.ModelViewSet):
                 detail={"Integrity error": "This review already exists"}
             )
         serializer.save(author=user, title=title)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    """Comment viewset."""
+
+    serializer_class = CommentSerializer
+    permission_classes = (NewPermission,)
+
+    def get_queryset(self):
+        # title_id = self.kwargs.get("title_id")
+        review_id = self.kwargs.get("review_id")
+        queryset = Comment.objects.filter(review=review_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        review_id = self.kwargs.get("review_id")
+        username = self.request.user.username
+        user = get_object_or_404(User, username=username)
+        review = get_object_or_404(Review, id=review_id)
+        # if Review.objects.filter(title=title, author=user).exists():
+        #    raise ParseError(
+        #        detail={"Integrity error": "This review already exists"}
+        #    )
+        serializer.save(author=user, review=review)
