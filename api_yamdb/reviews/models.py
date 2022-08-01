@@ -5,7 +5,7 @@ User = get_user_model()
 
 
 class Category(models.Model):
-    """Модель категории."""
+    """Category model."""
 
     name = models.CharField(
         max_length=256,
@@ -22,7 +22,7 @@ class Category(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                name="exclude the re-creation of the сategory",
+                name="unique_name_slug_category",
                 fields=["name", "slug"],
             )
         ]
@@ -34,7 +34,7 @@ class Category(models.Model):
 
 
 class Genre(models.Model):
-    """Модель жанра."""
+    """Genre model."""
 
     name = models.CharField(
         max_length=256,
@@ -51,7 +51,7 @@ class Genre(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                name="exclude the re-creation of the genre",
+                name="unique_name_slug_genre",
                 fields=["name", "slug"],
             )
         ]
@@ -63,7 +63,7 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
-    """Модель произведения."""
+    """Title model."""
 
     name = models.CharField(
         max_length=256,
@@ -99,7 +99,7 @@ class Title(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                name="exclude the re-creation of the titles",
+                name="unique_name_year_title",
                 fields=["name", "year"],
             )
         ]
@@ -135,30 +135,31 @@ class Review(models.Model):
         help_text="Выберите произведение",
     )
     text = models.TextField(
-        verbose_name="Текст отзыва",
         blank=False,
+        verbose_name="Текст отзыва",
+        help_text="Напишите свой отзыв",
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name="reviews",
         verbose_name="Автор",
-        related_name="review",
     )
     score = models.IntegerField(
-        verbose_name="Оценка",
-        help_text="Дайте оценку произведению от 1 до 10",
         choices=RATING_CHOICES,
         default="---",
+        verbose_name="Оценка",
+        help_text="Дайте оценку произведению от 1 до 10",
     )
     pub_date = models.DateTimeField(
-        verbose_name="Дата публикации",
         auto_now_add=True,
+        verbose_name="Дата публикации",
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                name="user can create only one review",
+                name="unique_title_author_review",
                 fields=["title", "author"],
             )
         ]
@@ -166,7 +167,7 @@ class Review(models.Model):
         verbose_name_plural = "Отзывы"
 
     def __str__(self):
-        return self.title_id
+        return f"{self.title}"
 
 
 class Comment(models.Model):
@@ -175,22 +176,24 @@ class Comment(models.Model):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
-        verbose_name="Обзор",
         related_name="comments",
+        verbose_name="Обзор",
+        help_text="Выберите отзыв",
     )
     text = models.TextField(
-        verbose_name="Комментарий",
         blank=False,
+        verbose_name="Комментарий",
+        help_text="Оставьте свой комментарий к отзыву",
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name="comments",
         verbose_name="Автор",
-        related_name="comment",
     )
     pub_date = models.DateTimeField(
-        verbose_name="Дата публикации",
         auto_now_add=True,
+        verbose_name="Дата публикации",
     )
 
     class Meta:
@@ -198,4 +201,4 @@ class Comment(models.Model):
         verbose_name_plural = "Комментарии к отзывам"
 
     def __str__(self):
-        return self.review_id
+        return f"{self.review}"
