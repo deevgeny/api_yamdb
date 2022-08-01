@@ -36,7 +36,7 @@ User = get_user_model()
 
 # Helper functions
 def check_required_fields(request, field_names):
-    """Check required fields and return result."""
+    """Check required fields and return errors or None."""
     errors = {}
     for field_name in field_names:
         if not request.data.get(field_name):
@@ -53,13 +53,13 @@ class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
     permission_classes = (AllowPostMethodForAnonymousUser,)
 
     def perform_create(self, serializer):
-        """Check username and create token."""
+        """Check username, create confirmation code, save and send email."""
         # Check username
         username = serializer.validated_data.get("username")
         email = serializer.validated_data.get("email")
         if username.lower() in settings.PROHIBITED_USER_NAMES:
             raise ParseError(detail=f"Username '{username}' is not allowed")
-        # Create token and save user
+        # Create confirmation code and save user
         user = User(username=username)
         token = confirmation_code.make_token(user)
         serializer.save(confirmation_code=token)
@@ -73,7 +73,7 @@ class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         )
 
     def create(self, request, *args, **kwargs):
-        """Change response status."""
+        """Override response status to 200_OK."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -84,7 +84,7 @@ class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
 
 
 class ManageUsersViewSet(viewsets.ModelViewSet):
-    """Manage users by admin."""
+    """Manage users by admininistrators."""
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
