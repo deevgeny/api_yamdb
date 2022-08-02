@@ -10,7 +10,7 @@ def prohibited_usernames_validator(value):
     """Validate prohibited usernames."""
     if value in settings.PROHIBITED_USER_NAMES:
         raise ValidationError(
-            _("%(value)s username is prohibited"),
+            _("%(value)s username is prohibited!"),
             params={"value": value},
         )
 
@@ -47,7 +47,7 @@ class User(AbstractUser):
         "Роль пользователя",
         choices=ROLE_CHOICES,
         default=USER,
-        max_length=9,
+        max_length=20,
         blank=True,
     )
     bio = models.TextField(
@@ -66,8 +66,13 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.is_staff or self.role == self.ADMIN
+        return self.is_staff or self.role == self.ADMIN or self.is_superuser
 
     @property
     def is_moderator(self):
-        return self.role == self.MODERATOR
+        return (
+            self.role == self.MODERATOR
+            or self.role == self.ADMIN
+            or self.is_staff
+            or self.is_superuser
+        )

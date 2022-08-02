@@ -1,7 +1,21 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 User = get_user_model()
+
+
+def validate_year(value):
+    current_year = date.today().year
+    if not (value <= current_year):
+        raise ValidationError(
+            _("Year should be less or equal to %(current_year)s!"),
+            params={"value": value},
+        )
+    return value
 
 
 class Category(models.Model):
@@ -20,12 +34,6 @@ class Category(models.Model):
     )
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                name="unique_name_slug_category",
-                fields=["name", "slug"],
-            )
-        ]
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
 
@@ -49,12 +57,6 @@ class Genre(models.Model):
     )
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                name="unique_name_slug_genre",
-                fields=["name", "slug"],
-            )
-        ]
         verbose_name = "Жанр"
         verbose_name_plural = "Жанры"
 
@@ -73,6 +75,9 @@ class Title(models.Model):
     year = models.PositiveSmallIntegerField(
         verbose_name="Год выпуска произведения",
         help_text="Добавьте год выпуска произведения",
+        validators=[
+            validate_year,
+        ],
     )
     description = models.TextField(
         null=True,
@@ -145,7 +150,7 @@ class Review(models.Model):
         related_name="reviews",
         verbose_name="Автор",
     )
-    score = models.IntegerField(
+    score = models.PositiveSmallIntegerField(
         choices=RATING_CHOICES,
         default="---",
         verbose_name="Оценка",

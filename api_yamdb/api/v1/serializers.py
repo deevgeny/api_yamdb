@@ -1,6 +1,3 @@
-from datetime import date
-
-from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from reviews.models import Category, Comment, Genre, Review, Title
@@ -39,13 +36,6 @@ class CategoriesSerializer(serializers.ModelSerializer):
             "name",
             "slug",
         )
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Category.objects.all(),
-                fields=["name", "slug"],
-                message="This record has already been created!",
-            )
-        ]
 
 
 class GenresSerializer(serializers.ModelSerializer):
@@ -57,22 +47,15 @@ class GenresSerializer(serializers.ModelSerializer):
             "name",
             "slug",
         )
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Genre.objects.all(),
-                fields=["name", "slug"],
-                message="This record has already been created!",
-            )
-        ]
 
 
-class TitleSerializer(serializers.ModelSerializer):
+class ReadTitleSerializer(serializers.ModelSerializer):
     """Title model serializer."""
 
     category = CategoriesSerializer(read_only=True)
     genre = GenresSerializer(read_only=True, many=True)
     description = serializers.CharField(required=False)
-    rating = serializers.SerializerMethodField()
+    rating = serializers.IntegerField(min_value=0, max_value=10)
 
     class Meta:
         model = Title
@@ -93,21 +76,8 @@ class TitleSerializer(serializers.ModelSerializer):
             )
         ]
 
-        def validate_year(self, value):
-            current_year = date.today().year
-            if not (value <= current_year):
-                raise serializers.ValidationError(
-                    "Title year should be less or equal to current year!"
-                )
-            return value
 
-    def get_rating(self, obj):
-        """Calculate title rating."""
-        if obj.reviews.count() > 0:
-            return obj.reviews.aggregate(rating=Avg("score"))["rating"]
-
-
-class CreateTitleSerializer(TitleSerializer):
+class CreateTitleSerializer(serializers.ModelSerializer):
     """Title model serializer for create operation."""
 
     genre = serializers.SlugRelatedField(
@@ -117,6 +87,25 @@ class CreateTitleSerializer(TitleSerializer):
         queryset=Category.objects.all(),
         slug_field="slug",
     )
+    description = serializers.CharField(required=False)
+
+    class Meta:
+        model = Title
+        fields = (
+            "id",
+            "name",
+            "year",
+            "description",
+            "genre",
+            "category",
+        )
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Title.objects.all(),
+                fields=["name", "year"],
+                message="This record has already been created!",
+            )
+        ]
 
 
 class ReviewSerializer(serializers.ModelSerializer):

@@ -28,11 +28,7 @@ class AdminUserOnly(permissions.BasePermission):
     """Allow any type of request for authenticated admin user."""
 
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and request.user.is_admin
-            or request.user.is_superuser
-        )
+        return request.user.is_authenticated and request.user.is_admin
 
 
 class AccessPersonalProfileData(permissions.BasePermission):
@@ -61,8 +57,6 @@ class ReviewCommentPermission(permissions.BasePermission):
             or request.user.is_authenticated
             and request.method in user_methods
             or request.user.is_authenticated
-            and request.user.is_admin
-            or request.user.is_authenticated
             and request.user.is_moderator
         )
 
@@ -70,8 +64,6 @@ class ReviewCommentPermission(permissions.BasePermission):
         return (
             request.method in permissions.SAFE_METHODS
             or request.user.username == obj.author.username
-            or request.user.is_authenticated
-            and request.user.is_admin
             or request.user.is_authenticated
             and request.user.is_moderator
         )
