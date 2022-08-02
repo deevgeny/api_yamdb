@@ -9,19 +9,14 @@ class NumberInFilter(filters.BaseInFilter, filters.NumberFilter):
 
 class TitleFilter(filters.FilterSet):
     category = filters.CharFilter(
-        field_name='category__slug',
-        lookup_expr='icontains'
+        field_name="category__slug", lookup_expr="icontains"
     )
     genre = filters.CharFilter(
-        field_name='genre__slug',
-        lookup_expr='icontains'
+        field_name="genre__slug", lookup_expr="icontains"
     )
-    name = filters.CharFilter(
-        field_name='name',
-        lookup_expr='icontains'
-    )
-    year = NumberInFilter(field_name='year', lookup_expr='in')
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+    year = NumberInFilter(field_name="year", lookup_expr="in")
 
     class Meta:
         model = Title
-        fields = '__all__'
+        fields = "__all__"

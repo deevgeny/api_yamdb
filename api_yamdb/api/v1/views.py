@@ -1,8 +1,8 @@
-from api.filters import TitleFilter
-from api.pagination import CustomPagination
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from django.db.models import Avg
+from django.db.utils import IntegrityError
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, views, viewsets
@@ -10,31 +10,31 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import Category, Comment, Genre, Review, Title
-from users.tokens import confirmation_code
 
+from reviews.models import Category, Genre, Review, Title
+from users.tokens import confirmation_code
+from .filters import TitleFilter
 from .permissions import (
     AccessPersonalProfileData,
     AdminUserOnly,
-    AdminUserOrReadOnly,
     AllowPostForAnonymousUser,
     ReviewCommentPermission,
+    TitleGenreCategoryPermission,
 )
 from .serializers import (
     CategoriesSerializer,
     CommentSerializer,
     CreateTitleSerializer,
     GenresSerializer,
+    ReadTitleSerializer,
     RegisterUserSerializer,
     ReviewSerializer,
-    TitleSerializer,
     UserSerializer,
 )
 
 User = get_user_model()
 
 
-# Helper functions
 def check_required_fields(request, field_names):
     """Check required fields and return errors or None."""
     errors = {}
@@ -45,7 +45,8 @@ def check_required_fields(request, field_names):
         return errors
 
 
-class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
+class RegisterUserViewSet(viewsets.GenericViewSet,
+                          mixins.CreateModelMixin):
     """New user registration view."""
 
     queryset = User.objects.all()
@@ -53,12 +54,9 @@ class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
     permission_classes = (AllowPostForAnonymousUser,)
 
     def perform_create(self, serializer):
-        """Check username, create confirmation code, save and send email."""
-        # Check username
+        """Create confirmation code, save and send email."""
         username = serializer.validated_data.get("username")
         email = serializer.validated_data.get("email")
-        if username.lower() in settings.PROHIBITED_USER_NAMES:
-            raise ParseError(detail=f"Username '{username}' is not allowed")
         # Create confirmation code and save user
         user = User(username=username)
         token = confirmation_code.make_token(user)
@@ -148,55 +146,50 @@ class PersonalProfileView(views.APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CategoriesViewSet(
-    mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    mixins.DestroyModelMixin,
-    GenericViewSet,
-):
+class BaseCreateListDestroyViewSet(mixins.CreateModelMixin,
+                                   mixins.ListModelMixin,
+                                   mixins.DestroyModelMixin,
+                                   GenericViewSet):
+    """Custom base class for Categories and Genres."""
+
+    permission_classes = (TitleGenreCategoryPermission,)
+    lookup_field = "slug"
+    filter_backends = (filters.SearchFilter, filters.OrderingFilter)
+    search_fields = ("=name",)
+    ordering = ("name",)
+
+
+class CategoriesViewSet(BaseCreateListDestroyViewSet):
     """Category viewset."""
 
     queryset = Category.objects.all()
     serializer_class = CategoriesSerializer
-    pagination_class = CustomPagination
-    permission_classes = (AdminUserOrReadOnly,)
-    lookup_field = "slug"
-    filter_backends = (filters.SearchFilter, filters.OrderingFilter)
-    search_fields = ("name",)
-    ordering = ("name",)
 
 
-class GenresViewSet(
-    mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    mixins.DestroyModelMixin,
-    GenericViewSet,
-):
+class GenresViewSet(BaseCreateListDestroyViewSet):
     """Genre viewset."""
 
     queryset = Genre.objects.all()
     serializer_class = GenresSerializer
-    pagination_class = CustomPagination
-    permission_classes = (AdminUserOrReadOnly,)
-    lookup_field = "slug"
-    filter_backends = (filters.SearchFilter, filters.OrderingFilter)
-    search_fields = ("name",)
-    ordering = ("name",)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Title viewset."""
 
-    queryset = Title.objects.all()
-    permission_classes = (AdminUserOrReadOnly,)
-    pagination_class = CustomPagination
-    filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
+    queryset = Title.objects.annotate(rating=Avg("reviews__score")).all()
+    permission_classes = (TitleGenreCategoryPermission,)
+    filter_backends = (
+        DjangoFilterBackend,
+        filters.OrderingFilter,
+        filters.SearchFilter
+    )
     filterset_class = TitleFilter
+    search_fields = ("=name",)
     ordering = ("name",)
 
     def get_serializer_class(self):
         if self.action in ("retrieve", "list"):
-            return TitleSerializer
+            return ReadTitleSerializer
         return CreateTitleSerializer
 
 
@@ -206,21 +199,21 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (ReviewCommentPermission,)
 
+    def get_title_or_404(self):
+        return get_object_or_404(Title, id=self.kwargs.get("title_id"))
+
     def get_queryset(self):
-        title_id = self.kwargs.get("title_id")
-        queryset = Review.objects.filter(title=title_id)
-        return queryset
+        return self.get_title_or_404().reviews.all()
 
     def perform_create(self, serializer):
-        title_id = self.kwargs.get("title_id")
-        username = self.request.user.username
-        user = get_object_or_404(User, username=username)
-        title = get_object_or_404(Title, id=title_id)
-        if Review.objects.filter(title=title, author=user).exists():
+        try:
+            serializer.save(
+                author=self.request.user, title=self.get_title_or_404()
+            )
+        except IntegrityError:
             raise ParseError(
                 detail={"Integrity error": "This review already exists"}
             )
-        serializer.save(author=user, title=title)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -229,14 +222,18 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = (ReviewCommentPermission,)
 
+    def get_review_or_404(self):
+        return get_object_or_404(
+            Review,
+            title=self.kwargs.get("title_id"),
+            id=self.kwargs.get("review_id")
+        )
+
     def get_queryset(self):
-        review_id = self.kwargs.get("review_id")
-        queryset = Comment.objects.filter(review=review_id)
-        return queryset
+        return self.get_review_or_404().comments.all()
 
     def perform_create(self, serializer):
-        review_id = self.kwargs.get("review_id")
-        username = self.request.user.username
-        user = get_object_or_404(User, username=username)
-        review = get_object_or_404(Review, id=review_id)
-        serializer.save(author=user, review=review)
+        serializer.save(
+            author=self.request.user,
+            review=self.get_review_or_404()
+        )

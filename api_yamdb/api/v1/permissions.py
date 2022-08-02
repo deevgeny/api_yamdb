@@ -4,19 +4,6 @@ from rest_framework import permissions
 User = get_user_model()
 
 
-class AdminUserOrReadOnly(permissions.BasePermission):
-    """Allow READ or authenticated administrator user only."""
-
-    def has_permission(self, request, view):
-        return (
-            # Only read
-            request.method in permissions.SAFE_METHODS
-            # Only admin user
-            or request.user.is_authenticated
-            and request.user.is_admin
-        )
-
-
 class AllowPostForAnonymousUser(permissions.BasePermission):
     """Post method permission for anonymous user."""
 
@@ -28,11 +15,7 @@ class AdminUserOnly(permissions.BasePermission):
     """Allow any type of request for authenticated admin user."""
 
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and request.user.is_admin
-            or request.user.is_superuser
-        )
+        return request.user.is_authenticated and request.user.is_admin
 
 
 class AccessPersonalProfileData(permissions.BasePermission):
@@ -46,8 +29,8 @@ class AccessPersonalProfileData(permissions.BasePermission):
 
 
 class ReviewCommentPermission(permissions.BasePermission):
-    """Permission for review and comment models.
-
+    """
+    Permission for review and comment models.
     Allow:
         READ: for all users
         POST DELETE PATCH: for authenticated owners(authors) of content
@@ -57,21 +40,32 @@ class ReviewCommentPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         user_methods = ["POST", "DELETE", "PATCH"]
         return (
-            request.method in permissions.SAFE_METHODS
-            or request.user.is_authenticated
-            and request.method in user_methods
-            or request.user.is_authenticated
-            and request.user.is_admin
-            or request.user.is_authenticated
-            and request.user.is_moderator
+                request.method in permissions.SAFE_METHODS
+                or request.user.is_authenticated
+                and request.method in user_methods
+                or request.user.is_authenticated
+                and request.user.is_moderator
         )
 
     def has_object_permission(self, request, view, obj):
         return (
-            request.method in permissions.SAFE_METHODS
-            or request.user.username == obj.author.username
-            or request.user.is_authenticated
-            and request.user.is_admin
-            or request.user.is_authenticated
-            and request.user.is_moderator
+                request.method in permissions.SAFE_METHODS
+                or request.user.username == obj.author.username
+                or request.user.is_authenticated
+                and request.user.is_moderator
+        )
+
+
+class TitleGenreCategoryPermission(permissions.BasePermission):
+    """
+    Permission for Title,Genre and Category models.
+    Allow:
+        READ: for all users
+        POST DELETE: for authenticated administrators
+    """
+
+    def has_permission(self, request, view):
+        return (
+                request.method in permissions.SAFE_METHODS
+                or request.user.is_authenticated and request.user.is_admin
         )
