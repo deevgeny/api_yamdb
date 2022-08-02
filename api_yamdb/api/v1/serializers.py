@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
 
@@ -9,7 +10,10 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("username", "email")
+        fields = (
+            "username",
+            "email",
+        )
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -77,35 +81,19 @@ class ReadTitleSerializer(serializers.ModelSerializer):
         ]
 
 
-class CreateTitleSerializer(serializers.ModelSerializer):
+class CreateTitleSerializer(ReadTitleSerializer):
     """Title model serializer for create operation."""
 
     genre = serializers.SlugRelatedField(
-        queryset=Genre.objects.all(), slug_field="slug", many=True
+        queryset=Genre.objects.all(),
+        slug_field="slug",
+        many=True
     )
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
         slug_field="slug",
     )
-    description = serializers.CharField(required=False)
-
-    class Meta:
-        model = Title
-        fields = (
-            "id",
-            "name",
-            "year",
-            "description",
-            "genre",
-            "category",
-        )
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Title.objects.all(),
-                fields=["name", "year"],
-                message="This record has already been created!",
-            )
-        ]
+    rating = serializers.IntegerField(required=False)
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -118,8 +106,19 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ("id", "text", "author", "score", "pub_date")
-        read_only_fields = ("id", "title", "author", "pub_date")
+        fields = (
+            "id",
+            "text",
+            "author",
+            "score",
+            "pub_date",
+        )
+        read_only_fields = (
+            "id",
+            "title",
+            "author",
+            "pub_date",
+        )
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -130,5 +129,14 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ("id", "text", "author", "pub_date")
-        read_only_fields = ("id", "author", "pub_date")
+        fields = (
+            "id",
+            "text",
+            "author",
+            "pub_date",
+        )
+        read_only_fields = (
+            "id",
+            "author",
+            "pub_date",
+        )

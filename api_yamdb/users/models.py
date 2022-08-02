@@ -37,7 +37,10 @@ class User(AbstractUser):
                 " Letters, digits and @/./+/-/_ only."
             )
         ),
-        validators=[username_validator, prohibited_usernames_validator],
+        validators=[
+            username_validator,
+            prohibited_usernames_validator
+        ],
         error_messages={
             "unique": _("A user with that username already exists."),
         },
@@ -71,8 +74,8 @@ class User(AbstractUser):
     @property
     def is_moderator(self):
         return (
-            self.role == self.MODERATOR
-            or self.role == self.ADMIN
-            or self.is_staff
-            or self.is_superuser
+                self.role == self.MODERATOR
+                or self.role == self.ADMIN
+                or self.is_staff
+                or self.is_superuser
         )
