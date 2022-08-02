@@ -30,7 +30,7 @@ class AccessPersonalProfileData(permissions.BasePermission):
 
 class ReviewCommentPermission(permissions.BasePermission):
     """
-    Permission for review and comment models.
+    Permission for review and comment models
     Allow:
         READ: for all users
         POST DELETE PATCH: for authenticated owners(authors) of content
@@ -40,19 +40,19 @@ class ReviewCommentPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         user_methods = ["POST", "DELETE", "PATCH"]
         return (
-                request.method in permissions.SAFE_METHODS
-                or request.user.is_authenticated
-                and request.method in user_methods
-                or request.user.is_authenticated
-                and request.user.is_moderator
+            request.method in permissions.SAFE_METHODS
+            or request.user.is_authenticated
+            and request.method in user_methods
+            or request.user.is_authenticated
+            and request.user.is_moderator
         )
 
     def has_object_permission(self, request, view, obj):
         return (
-                request.method in permissions.SAFE_METHODS
-                or request.user.username == obj.author.username
-                or request.user.is_authenticated
-                and request.user.is_moderator
+            request.method in permissions.SAFE_METHODS
+            or request.user.username == obj.author.username
+            or request.user.is_authenticated
+            and request.user.is_moderator
         )
 
 
@@ -66,6 +66,7 @@ class TitleGenreCategoryPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return (
-                request.method in permissions.SAFE_METHODS
-                or request.user.is_authenticated and request.user.is_admin
+            request.method in permissions.SAFE_METHODS
+            or request.user.is_authenticated
+            and request.user.is_admin
         )
