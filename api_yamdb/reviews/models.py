@@ -1,7 +1,24 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 User = get_user_model()
+
+
+def validate_year(value):
+    current_year = date.today().year
+    if not (value <= current_year):
+        raise ValidationError(
+            _(
+                f"You cannot add works that have not yet been released."
+                f" The year of issue cannot be greater than {current_year}"
+            ),
+            params={"value": value},
+        )
+    return value
 
 
 class Category(models.Model):
@@ -20,12 +37,6 @@ class Category(models.Model):
     )
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                name="unique_name_slug_category",
-                fields=["name", "slug"],
-            )
-        ]
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
 
@@ -49,12 +60,6 @@ class Genre(models.Model):
     )
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                name="unique_name_slug_genre",
-                fields=["name", "slug"],
-            )
-        ]
         verbose_name = "Жанр"
         verbose_name_plural = "Жанры"
 
@@ -73,6 +78,7 @@ class Title(models.Model):
     year = models.PositiveSmallIntegerField(
         verbose_name="Год выпуска произведения",
         help_text="Добавьте год выпуска произведения",
+        validators=[validate_year],
     )
     description = models.TextField(
         null=True,
@@ -131,7 +137,7 @@ class Review(models.Model):
         Title,
         on_delete=models.CASCADE,
         related_name="reviews",
-        verbose_name="Отзыв",
+        verbose_name="Произведение",
         help_text="Выберите произведение",
     )
     text = models.TextField(
@@ -145,7 +151,7 @@ class Review(models.Model):
         related_name="reviews",
         verbose_name="Автор",
     )
-    score = models.IntegerField(
+    score = models.PositiveSmallIntegerField(
         choices=RATING_CHOICES,
         default="---",
         verbose_name="Оценка",
@@ -167,7 +173,8 @@ class Review(models.Model):
         verbose_name_plural = "Отзывы"
 
     def __str__(self):
-        return f"{self.title}"
+        return (f"{self.author} добавил отзыв на {self.title},"
+                f" с оценкой {self.score}")
 
 
 class Comment(models.Model):
@@ -177,11 +184,12 @@ class Comment(models.Model):
         Review,
         on_delete=models.CASCADE,
         related_name="comments",
-        verbose_name="Обзор",
+        verbose_name="Отзывы",
         help_text="Выберите отзыв",
     )
     text = models.TextField(
         blank=False,
+        null=False,
         verbose_name="Комментарий",
         help_text="Оставьте свой комментарий к отзыву",
     )
@@ -201,4 +209,5 @@ class Comment(models.Model):
         verbose_name_plural = "Комментарии к отзывам"
 
     def __str__(self):
-        return f"{self.review}"
+        return (f"{self.author} добавил новый комментарий: {self.text}"
+                f" к отзыву: {self.review}")
