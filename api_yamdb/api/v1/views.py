@@ -10,9 +10,9 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from reviews.models import Category, Genre, Review, Title
 from users.tokens import confirmation_code
+
 from .filters import TitleFilter
 from .permissions import (
     AccessPersonalProfileData,
@@ -45,8 +45,7 @@ def check_required_fields(request, field_names):
         return errors
 
 
-class RegisterUserViewSet(viewsets.GenericViewSet,
-                          mixins.CreateModelMixin):
+class RegisterUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
     """New user registration view."""
 
     queryset = User.objects.all()
@@ -115,13 +114,6 @@ class ManageUsersViewSet(viewsets.ModelViewSet):
     search_fields = ("username",)
     ordering = ("username",)
 
-    def perform_create(self, serializer):
-        """Check username."""
-        username = serializer.validated_data.get("username")
-        if username.lower() in settings.PROHIBITED_USER_NAMES:
-            raise ParseError(detail=f"Username '{username}' is not allowed")
-        serializer.save()
-
 
 class PersonalProfileView(views.APIView):
     """Read and edit personal profile data view."""
@@ -146,10 +138,12 @@ class PersonalProfileView(views.APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class BaseCreateListDestroyViewSet(mixins.CreateModelMixin,
-                                   mixins.ListModelMixin,
-                                   mixins.DestroyModelMixin,
-                                   GenericViewSet):
+class BaseCreateListDestroyViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    GenericViewSet,
+):
     """Custom base class for Categories and Genres."""
 
     permission_classes = (TitleGenreCategoryPermission,)
@@ -181,7 +175,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     filter_backends = (
         DjangoFilterBackend,
         filters.OrderingFilter,
-        filters.SearchFilter
+        filters.SearchFilter,
     )
     filterset_class = TitleFilter
     search_fields = ("=name",)
@@ -226,7 +220,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return get_object_or_404(
             Review,
             title=self.kwargs.get("title_id"),
-            id=self.kwargs.get("review_id")
+            id=self.kwargs.get("review_id"),
         )
 
     def get_queryset(self):
@@ -234,6 +228,5 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(
-            author=self.request.user,
-            review=self.get_review_or_404()
+            author=self.request.user, review=self.get_review_or_404()
         )
