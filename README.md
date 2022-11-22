@@ -1,9 +1,15 @@
-# Веб-приложение по сбору отзывов пользователей на произведения
+# API Yamdb - reviews web application
 
-Цель проекта - получить опыт командной работы.
+API Yamdb web application collects user reviews for books, movies and music. It 
+works only via API and has admin site. 
+
+Users can publish reviews and leave their rate from 1 to 10. Users rates will
+form average rating. Web application is not designed to store books, movies or
+music. They are represented by name, year and short description. Users are 
+also allowed to comment other users reviews.
 
 
-## Стек технологий
+## Technology stack
 - Python 3.7
 - Django 2.2.16
 - Django Filter 21.1
@@ -11,162 +17,82 @@
 - Simple JWT 5.2.0
 
 
-## Описание проекта
-
-Веб-приложение **YaMDb** собирает отзывы пользователей на произведения. 
-
-Произведения делятся на категории: «Книги», «Фильмы», «Музыка». 
-Произведению может быть присвоен жанр из списка предустановленных.
-Список категорий и жанров может быть расширен администратором.
-
-Пользователи могут оставлять к произведениям текстовые отзывы и ставить оценку от одного до десяти.
-
-Из пользовательских оценок формируется рейтинг произведения (средняя величина всех его оценок).
-На одно произведение пользователь может оставить только один отзыв.
-
-Произведение представляет собой его название, год и описание, хранение самих произведений не предусмотрено. 
-
-
-## Модели ORM
+## ORM - models
 В веб-приложении используются следующие модели:
-- User - кастомная модель пользователя
-- Title - модель произведения
-- Genre - модель жанра произведения
-- Category - модель категории произведения
-- Review - модель отзыва к произведению
-- Comment - модель комментария к отзывам
+- User - custom user model.
+- Title - books, movies or music. 
+- Genre - genres.
+- Category - categories.
+- Review - reviews.
+- Comment - review comments.
 
 
-## Пользовательские роли и права доступа
-- Анонимный пользователь:
-    - может просматривать описания произведений, читать отзывы и комментарии.
-- Аутентифицированный пользователь:
-    - имеет те же права что и анонимный пользователь.
-    - может публиковать отзывы и ставить оценки произведениям.
-    - может комментировать отзывы.
-    - может редактировать и удалять свои отзывы и комментарии, редактировать свои оценки произведений.
-    - эта роль присваивается по умолчанию каждому новому пользователю.
-- Модератор:
-    - имеет те же права, что и аутентифицированный пользователь.
-    - имеет право удалять и редактировать любые отзывы и комментарии.
-- Администратор: 
-    - полные права на управление всем контентом проекта.
-    - может создавать и удалять произведения, категории и жанры.
-    - может назначать роли пользователям.
-- Суперпользователь:
-    - имеет те же права, что и администратор.
-    - может создавать, блокировать и удалять пользователей.
-    - имеет неограниченные права управления проектом.
+## Roles and access rights
+- Anonymous user - only read reviews and comments.
+- Authenticated user - publish reviews and comments.
+- Moderator - manage (edit or delete) reviews and comments.
+- Administrator - manage all content and user roles. 
+- Superuser - unlimited rights to manage the project.
 
 
-## Ресурсы API
-- `http://127.0.0.1:8000/api/v1/auth/` - аутентификация и регистрация.
-- `http://127.0.0.1:8000/api/v1/users/` - пользователи.
-- `http://127.0.0.1:8000/api/v1/titles/` - произведения.
-- `http://127.0.0.1:8000/api/v1/categories/` - категории произведений.
-- `http://127.0.0.1:8000/api/v1/genres/` - жанры произведений.
-- `http://127.0.0.1:8000/api/v1/reviews/` - отзывы на произведения.
-- `http://127.0.0.1:8000/api/v1/comments/` - комментарии к отзывам.
+## User registration
+To create a new user:
+- Send api request with email address and username.
+- Receive email with confirmation code.
+- Send api request with confirmation code to get authentication token.
+
+Email with confirmation code is sent to a file which is stored in 
+`api_yamdb/sent_emails/` directory. This functionality is implemented with 
+django email backend `django.core.mail.backends.filebased.EmailBackend`. If you
+would like the web application to send email to mailbox, please reconfigure
+`settings.py` file.
 
 
-## Настройка и запуск веб-приложения
+## How to install and run
 ```
-# Клонируем репозиторий
+# Clone the repository
 git clone https://github.com/evgeny81d/api_yamdb.git
 
-# Переходим в директорию с проектом 
+# Go to the project directory
 cd api_yamdb
 
-# Создаем виртуальное окружение Python версии 3.7
+# Create Python 3.7 virtual environment
 python3.7 -m venv venv
 
-# Активируем виртуальное окружение
+# Activate virtual environment
 source venv/bin/activate
 
-# Устанавливаем зависимости
+# Install dependencies
 pip install -r requirements.txt --upgrade pip
 
-# Применяем миграции
+# Run migrations
 python3 api_yamdb/manage.py migrate
 
-# Создаем суперпользователя
+# Create superuser
 python3 api_yamdb/manage.py createsuperuser
 
-# Запускаем сервер разработки django
+# Run project on django development server
 python3 api_yamdb/manage.py runserver
 ```
 
- - [http://127.0.0.1:8000/redoc/](http://127.0.0.1:8000/redoc/) - полная документация API
- - [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/) - админ панель веб-приложения
+## Finally the web application is ready for use
+
+ - [http://127.0.0.1:8000/redoc/](http://127.0.0.1:8000/redoc/) - API documentation
+ - [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/) - admin site
 
 
-## Примеры API запросов
-Для создания пользователя через API, необходимо: 
-- сначала отправить запрос с адресом электронной почты и именем нового пользователя. После этого на указанный
-адрес электронной почты придет письмо с кодом подтверждения.
-- после этого отправить запрос на получение токена указав имя пользователя и код подтверждения из письма.
+## Security notice
+The above instructions how to install and run the project have only
+demonstration purpose and can be used on local host. 
 
-В учебной версии веб-приложения, отправка письма происходит в файл, который сохраняется в
-директории `api_yamdb/sent_emails/`. Это реализовано с помощью почтового
-бэкэнда Django - `django.core.mail.backends.filebased.EmailBackend`.
+If you would like to deploy the project on web server, please read the 
+[documentation](https://docs.djangoproject.com/en/2.2/howto/deployment/).
 
-### Создание нового пользователя
-#### Запрос
-```sh
-curl --location --request POST 'http://127.0.0.1:8000/api/v1/auth/signup/' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "email": "newuseremail@example.com",
-    "username": "newuser"
-}'
-```
-#### Ответ
-```sh
-{
-    "email": "newuseremail@example.com",
-    "username": "newuser"
-}
-```
-
-### Получение токена
-#### Запрос
-```sh
-curl --location --request POST 'http://127.0.0.1:8000/api/v1/auth/token/' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "username": "newuser",
-    "confirmation_code": "newuser-confirmation-code"
-}'
-```
-#### Ответ
-```sh
-{
-    "token": "jwt_access_token"
-}
-```
-
-### Обращение к данным своей учетной записи
-#### Запрос
-```sh
-curl --location --request GET 'http://127.0.0.1:8000/api/v1/users/me/' \
---header 'Authorization: Bearer jwt_access_token'
-```
-#### Ответ
-```sh
-{
-    "username": "newuser",
-    "email": "newuseremail@example.com",
-    "first_name": "",
-    "last_name": "",
-    "bio": "",
-    "role": "user"
-}
-```
-
-## Разработчики
+ 
+## Authors
 [Евгений Дериглазов](https://github.com/evgeny81d) |
-Тимлид. Кастомная модель User, регистрация и аутентификация пользователей.
+Team lead. Custom User model, registration and authentication.
 
-[Александр Гетманов](https://github.com/SelfGenius) | Разработчик, контент администратора.
+[Александр Гетманов](https://github.com/SelfGenius) | Developer. Administrator content.
 
-[Герман Кабачков](https://github.com/tinkofoxil) | Разработчик, контент пользователей.
+[Герман Кабачков](https://github.com/tinkofoxil) | Developer. User content.
